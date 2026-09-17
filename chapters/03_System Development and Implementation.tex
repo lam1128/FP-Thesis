@@ -1,0 +1,44 @@
+\chapter{System Development and Implementation}
+
+\section{Frame-Based Vision on Jetson}
+\subsection{Real-Time Object Detection}
+\subsection{IOU-Based Object Tracking}
+\subsection{KITTI Evaluation}
+
+
+\section{Offline Event-Based Object Detection with RVT on Jetson}
+\subsection{RVT Deployment and GEN1 Dataset Preparation}
+\subsection{RVT Validation Pipeline}
+\subsection{Detection Result Visualization}
+
+
+\section{Event-Based Vison on Kria KV260}
+\subsection{Event Data Acquisition}
+\subsection{EVT21 Event Encoding}
+
+
+\section{Real-Time Kria–Jetson Event Processing System}
+\subsection{Overall System Architecture}
+
+IMX636
+   ↓
+Kria KV260
+   ↓
+Metavision Driver
+   ↓
+EVT21 EventPacket
+   ↓
+ROS 2 / Ethernet
+   ↓
+Jetson Orin
+   ↓
+EVT21 Decoder
+   ↓
+RVT
+   ↓
+Object Detection
+
+\subsection{Event Publication on Kria}
+\subsection{Kria–Jetson Data Communication}
+\subsection{EVT21 Decoding on Jetson}
+\subsection{Real-Time RVT Inference}
