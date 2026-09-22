@@ -1,9 +1,25 @@
 \chapter{Introduction}
 
+This chapter introduces the research background and scope of this Research Internship. The main focus is to explain why the project uses both frame cameras and event cameras, and which basic system validations were completed in this work.
+
 \section{Background and Motivation}
 
-\section{Objectives of the Research Internship}
+Visual perception is an important part of how mobile robots, autonomous vehicles, and industrial mobile platforms understand their surroundings. Traditional vision systems usually use RGB (red, green, blue) or grayscale cameras with a fixed frame rate, and then send complete images to object detection, tracking, or other vision algorithms. This processing method is already quite mature. However, in scenes with fast motion, strong lighting changes, or strict low-latency requirements, exposure time and fixed frame rates can cause motion blur, delay, and repeated data\cite{szeliski2022}.
 
-\section{Project Workflow and Main Contributions}
+Event cameras work in a different way. Each pixel independently detects brightness changes and produces an event only when the change is larger than a certain threshold, instead of outputting a complete image at fixed time intervals\cite{gallego2022}. Therefore, event cameras can provide very high temporal resolution and have advantages in scenes with fast motion and large brightness changes. However, event data is asynchronous and cannot be processed directly in the same way as normal images. Extra handling is needed for event encoding, timestamps, polarity, event representation, and later data interfaces.
 
-\section{Report Structure}
+The HybridNeuroPerception project studies the combined use of traditional vision and neuromorphic vision on mobile platforms. The project aims to use both the complete image information from frame cameras and the fast-change information from event cameras, while achieving low latency and high resource efficiency on embedded hardware. The overall project also aims to combine classical AI processing with neuromorphic electronic systems and further evaluate perception accuracy, resource consumption, and energy efficiency\cite{hybridneuroperceptionGVB2025}. This Research Internship is part of the early system validation work. Its main focus is to first make the frame-based vision system, event camera, and embedded computing platforms work separately, and then build a cross-device event data pipeline that can run continuously.
+
+\section{Objectives and Scope of the Research Internship}
+
+According to the task description for this internship\cite{fpMainTasks}, the work can be divided into the following parts:
+
+\begin{enumerate}[label=\arabic*.]
+    \item Build a frame-camera object detection system on the Jetson Orin, and implement a simple object tracking program based on bounding-box overlap together with a basic KITTI evaluation process;
+    \item Deploy the Recurrent Vision Transformer (RVT) on the Jetson and use the GEN1 dataset for offline event-based object detection validation;
+    \item Set up the Kria KV260 and IMX636 event-camera platform and confirm that real event data can be acquired and displayed;
+    \item Use the Metavision ROS 2 driver on the Kria to publish raw event messages. The final test configuration in this work uses EVT3 and sends the event data to the Jetson over Ethernet;
+    \item Complete EVT3 decoding, event-image rendering, and display on the Jetson, and check whether the event topic and rendered images can be output continuously.
+\end{enumerate}
+
+The final results include a frame-based vision baseline on the Jetson, offline GEN1 validation of RVT, and a real-time event transfer and visualization pipeline from the IMX636 and Kria to the Jetson.

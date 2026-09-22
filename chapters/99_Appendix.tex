@@ -1,27 +1,47 @@
 \chapter{Appendix}
 
-\begin{table}[h!]
-  \begin{center}
-    \caption{Your first table}
-    \label{tab:table1}
-    \begin{tabular}{l|c|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-      \textbf{Value 1} & \textbf{Value 2} & \textbf{Value 3}\\
-      $\alpha$ & $\beta$ & $\gamma$ \\
-      \hline
-      1 & 1110.1 & a\\
-      2 & 10.1 & b\\
-      3 & 23.113231 & c\\
-    \end{tabular}
-  \end{center}
-  \floatfoot{A note describing the table.}
+This appendix keeps information that is not suitable for detailed discussion in the main text but is still useful for system reproduction and for understanding the boundaries of the results. The appendix is not enabled in the current \texttt{main.tex}. If the final submission needs additional ROS 2 topics, experimental parameters, or extra results, they can be added here without interrupting the main report.
+
+\section{ROS 2 Data Flow of the Final Real-Time System}
+
+The final real-time event processing system connects event acquisition on the Kria with rendering on the Jetson through ROS 2 topics. The \texttt{metavision\_driver} on the Kria publishes EVT3-encoded \texttt{event\_camera\_msgs/msg/EventPacket} messages. \texttt{event\_camera\_codecs} and \texttt{event\_camera\_renderer} inside Jetson Docker process the event data and publish images. \texttt{rqt\_image\_view} on the Jetson host then subscribes to the renderer image topic.
+
+\begin{table}[htbp]
+\centering
+\caption{Main data interfaces in the final real-time event processing system.}
+\begin{tabularx}{\textwidth}{p{0.34\textwidth}Xp{0.20\textwidth}}
+\toprule
+Interface & Function & Platform \\
+\midrule
+\texttt{/metavision\_driver/events} & EVT3 EventPacket & Kria to Jetson Docker \\
+Renderer image topic & Rendered event image message & Jetson Docker to host \\
+\bottomrule
+\end{tabularx}
 \end{table}
 
-\newpage
+\section{Items Not Treated as Completed Results in This Report}
 
-\begin{figure}[h]
-    \centering
-    \caption{My Figure Caption}
-    \includegraphics[width=0.7\textwidth]{tum-resources/images/Universitaet_Flaggen.jpg}
-    \floatfoot{A note describing the figure}
-    \label{fig:ourFigure}
-\end{figure}
+To avoid describing experimental development code or long-term project goals as current system capabilities, this report does not treat the following items as completed results of this Research Internship:
+
+\begin{itemize}
+    \item Real-time RVT object detection;
+    \item RVT inference acceleration in FPGA PL;
+    \item Strictly measured end-to-end latency from camera input to detection result;
+    \item Verified order-of-magnitude reduction in power consumption;
+    \item Completed data fusion between RGB and event cameras.
+\end{itemize}
+
+The completed RVT result is limited to offline GEN1 validation on the Jetson. Experimental real-time RVT code can remain in the code repository, but it should only be described as part of the formal real-time system after it is connected again to the current EVT3 pipeline and its stability, output, and performance are validated.
+
+\section{Information to Complete Before Final Submission}
+
+The current report is still a content draft. Before final submission, the cover information, software versions, and final experimental materials need to be fixed. The following items should be confirmed one by one before the final English report or final PDF is generated, based on the actual project state at the time of submission:
+
+\begin{itemize}
+    \item Final English or German title;
+    \item TUM Examiner and Supervisor information;
+    \item Matriculation Number and submission date;
+    \item Final Jetson and Kria software versions and Git commit;
+    \item Representative detection images, system hardware photos, and EVT3 renderer screenshots;
+    \item If new latency or power tests are completed later, the corresponding limitations and future-work descriptions in the main text should also be updated.
+\end{itemize}

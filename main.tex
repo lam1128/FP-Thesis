@@ -1,5 +1,14 @@
 \documentclass[oneside]{tum-book}
 
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{csquotes}
+
 \title{Development of a Vision System for Frame- and Event-Based Object Detection}
 %\subtitle{Subtitle}
 \author{Jiaqi Lin}
@@ -29,7 +38,6 @@
   00.09.2026
 }
 
-
 \begin{document}
 
 \input{chapters/00_Abstract}
@@ -40,21 +48,16 @@
 \listoffigures
 \newpage
 
-
 \input{chapters/01_Introduction}
-\input{chapters/02_Technical Background}
-\input{chapters/03_System Development and Implementation}
-\input{chapters/04_Experimental Results and Evaluation}
+\input{chapters/02_Theory}
+\input{chapters/03_Methods}
+\input{chapters/04_Results}
 \input{chapters/05_Conclusion and Outlook}
-%\input{chapters/06_Conclusion}
-
-
 
 \newpage
 \printbibliography
-\newpage
+%\newpage
 %\appendix
 %\input{chapters/99_Appendix}
-
-\printthesisdisclaimer{Munich, 00.00.0000}{Name}
+%\printthesisdisclaimer{Munich, To be completed}{Jiaqi Lin}
 \end{document}

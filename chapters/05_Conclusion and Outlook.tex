@@ -1,12 +1,29 @@
 \chapter{Conclusion and Outlook}
 
+This chapter summarizes the main work and experimental results of this Research Internship and explains the current limitations of the system. It then gives possible directions for future work, including real-time event-based object detection, latency and power measurement, FPGA preprocessing, and data fusion between RGB and event cameras.
+
 \section{Summary of the Work}
 
-\section{Main Findings}
-\subsection{Differences Between Frame-Based and Event-Based Vision}
-\subsection{Significance of the Kria--Jetson Distributed Architecture}
-\subsection{Interpretation of Real-Time Processing Rates}
+This Research Internship focused on the embedded vision platform of the HybridNeuroPerception project. The work was divided into three stages. First, a frame-based vision system was established on the Jetson. Second, offline event-based object detection with RVT was validated. Finally, a real event-camera platform was set up and a real-time event processing pipeline between the Kria and Jetson was built.
+
+In the first stage, the NVIDIA Jetson Orin was used for normal camera input, DetectNet real-time object detection, testing of several pretrained networks, a C++ IoU tracking program, basic KITTI detection evaluation, and runtime measurement. This stage verified the frame-based vision processing workflow on the Jetson and provided a basic reference for the later event-based vision experiments.
+
+In the second stage, an RVT runtime environment was built on the Jetson, and the GEN1 dataset and RVT-Tiny checkpoint were used to complete the full validation. Visualization of predictions and ground-truth annotations could also be generated correctly, so quantitative metrics and actual detection results could be checked together.
+
+In the third stage, the Prophesee IMX636 and Kria KV260 were integrated at the hardware and driver level. The current final test configuration uses EVT3, and the Metavision ROS 2 driver on the Kria publishes \texttt{EventPacket} messages. The event data is transferred to the Jetson over Ethernet and ROS 2. EVT3 decoding and image rendering are performed inside Docker, and the results are continuously displayed with \texttt{rqt\_image\_view} on the Jetson host. This system is the final real-time event processing pipeline completed and validated in this Research Internship.
 
 \section{Current Limitations}
 
+The current work has verified that real IMX636 event streams can reach the Jetson through the Kria and ROS 2, be decoded and rendered as images in Docker, and then be continuously displayed with \texttt{rqt\_image\_view} on the host. However, this work still covers only the basic system part of the HybridNeuroPerception project.
+
+The final real-time pipeline currently does not include event-based object detection. The completed RVT results come from offline GEN1 validation. The system also does not yet include strict end-to-end latency or power measurements, so a complete quantitative evaluation of real-time performance and energy efficiency cannot yet be given. The Kria and Jetson also do not currently use a common time reference, so the time differences in the current logs cannot be directly used as strict cross-device end-to-end latency. The Kria KV260 currently uses the existing MIPI/FPGA/V4L2 data path for camera input, while the main work in this implementation is on the ARM/Linux software side, including Metavision/OpenEB access, the ROS 2 driver, and cross-device event transfer. Custom FPGA PL processing for event filtering, ROI, motion compensation, or neural-network computation has not yet been implemented. In addition, time synchronization, external calibration, quality-information combination, and result fusion between the RGB camera and event camera have not yet been implemented. ROI selection, motion compensation, and neuromorphic hardware described in the project plan are also not completed parts of this work\cite{hybridneuroperceptionGVB2025}.
+
 \section{Future Work}
+
+The first next step is to add real-time event-based object detection to the current stable EVT3 communication pipeline. The existing offline RVT validation has already clarified the required stacked-histogram event representation. Therefore, the real-time version needs to focus on event-window construction, input-tensor generation, ROS 2 interfaces, and the timestamp relationship of the output results. Long-running tests should then be used to verify system stability.
+
+For event-data preprocessing, the position of the Kria and FPGA close to the sensor can be used further. The project plan includes event time synchronization and timestamp processing, region-of-interest selection, and motion compensation\cite{hybridneuroperceptionGVB2025}. The Kria and Jetson currently do not have a common time reference. In the future, an EMBox can be added to provide a common time reference for both devices, allowing more reliable cross-device timestamp comparison and end-to-end latency measurement. These steps can also provide more consistent data for later object detection and sensor fusion.
+
+For multi-sensor perception, an RGB camera can be added in the future. Time synchronization and external calibration should first be completed, followed by a simpler object-level fusion method. For example, bounding boxes from the two vision methods can be combined together with their confidence or quality information. These directions are consistent with the overall project plan for RGB-camera and event-camera fusion\cite{hybridneuroperceptionGVB2025}. More complex feature-level fusion can then be considered depending on the actual results.
+
+Finally, a unified method for latency and power measurement should be established. Sensor acquisition, ROS 2 transfer, event processing, and model inference should be timed separately. The power consumption of the Jetson, Kria, and later neuromorphic hardware should also be recorded under different working conditions. The overall project evaluation also includes power consumption, throughput, latency, and perception performance\cite{hybridneuroperceptionGVB2025}. A longer-term goal is to combine classical GPU processing, FPGA preprocessing, and SNN or other neuromorphic processing, and evaluate perception accuracy, real-time performance, and energy efficiency on mobile platforms and in real application scenarios.

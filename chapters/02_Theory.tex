@@ -1,0 +1,129 @@
+\chapter{Technical Background}
+
+This chapter introduces the technical background needed to understand the later system implementation. It starts with traditional frame-based object detection and tracking, then explains the working principle of event cameras, event data representations, and the RVT event-based object detection method. Finally, it introduces the two embedded computing platforms used in this project: Jetson Orin and Kria KV260.
+
+\section{Object Detection, Tracking, and Evaluation in Frame-Based Vision}
+
+A normal digital camera exposes and outputs complete images at fixed time intervals. For example, when the camera runs continuously, every frame contains a complete two-dimensional image, even if most parts of the scene have not changed. Deep-learning object detection models usually represent these images as regular tensors and then output which objects are in the image, which classes they belong to, and where they are located\cite{szeliski2022}.
+
+A common detection result contains three types of information. The first is the object class, such as car or pedestrian. The second is the confidence score, which shows how confident the model is about the prediction. The third is the bounding box, which is usually described by the coordinates of the top-left and bottom-right corners, or by the center point, width, and height. Object detection answers the questions "what is in this frame" and "where is it", while object tracking also needs to answer which object in the current frame is the same object as in the previous frame.
+
+The simple tracking method used in this project mainly matches objects based on the overlap between bounding boxes. This overlap is usually described by Intersection over Union (IoU). For a predicted box $B_p$ and a reference box $B_g$, IoU is defined as
+\begin{equation}
+\mathrm{IoU}(B_p,B_g)=\frac{|B_p\cap B_g|}{|B_p\cup B_g|}.
+\end{equation}
+The numerator is the area where the two boxes overlap, and the denominator is the total area covered by the two boxes together. Therefore, IoU ranges from 0 to 1. A value of 0 means that the boxes do not overlap at all, while a value of 1 means that they are exactly the same. An IoU tracker compares detection boxes in neighboring frames. If the overlap between two boxes reaches a defined threshold, they are connected to the same track ID. This method is simple to compute, but it may fail to keep the correct object identity when objects move quickly, are occluded, or cross each other.
+
+IoU can also be used to evaluate detection results. During evaluation, predicted boxes are first matched one-to-one with manually labeled ground-truth boxes. If the class is correct and the IoU reaches the defined threshold, the prediction is counted as a True Positive (TP). If the model gives a predicted box but no ground-truth box meets the matching condition, it is counted as a False Positive (FP). If a real object exists but no predicted box is successfully matched to it, it is counted as a False Negative (FN). A True Negative (TN) means that no object exists and the model also does not incorrectly detect one. Different from a normal classification task, object detection contains a very large number of background positions and usually does not have a natural and limited total number of negative samples. Therefore, TN is generally not used as a main statistic in object detection.
+
+After TP, FP, and FN are obtained, Precision ($P$), Recall ($R$), and the F1 score can be calculated:
+\begin{align}
+P &= \frac{TP}{TP+FP},\\
+R &= \frac{TP}{TP+FN},\\
+F_1 &= \frac{2PR}{P+R}.
+\end{align}
+Precision answers the question "among the objects detected by the model, how many are correct". Recall answers the question "among the real objects, how many were found by the model". If a model outputs many boxes to avoid missing objects, Recall may be high, but FP may also increase and reduce Precision. F1 uses the harmonic mean of Precision and Recall and can be used as one combined metric when both need to be considered.
+
+In object detection, Average Precision (AP) is used to evaluate detection performance over different confidence thresholds. The model gives a confidence score for each predicted box. By keeping predictions step by step from high to low confidence, different Precision and Recall values can be obtained and used to form a Precision--Recall curve. AP summarizes this curve, so it gives a more complete view of detection performance than Precision or Recall calculated at only one fixed confidence threshold. The numbers in AP50 and AP75 indicate the IoU matching threshold used during evaluation. AP50 uses IoU=0.50, which is a more relaxed matching condition, while AP75 uses IoU=0.75 and requires more accurate box positions. mAP (mean Average Precision) is calculated by first obtaining AP for multiple classes or multiple IoU thresholds and then taking the average, which is used to represent the overall detection performance of the model.
+
+In the early stage of this project, NVIDIA \texttt{jetson-inference} was used to build the frame-based vision baseline\cite{jetsonInference}. In the program, \texttt{videoSource} reads camera or image input, \texttt{detectNet} performs object detection and outputs bounding boxes, and \texttt{videoOutput} displays or saves the results. An IoU tracker and a KITTI image evaluation program were then added to study and verify the relationship between object detection, object tracking, and evaluation metrics.
+
+\section{Event Cameras and Event Data}
+
+The most important difference between an event camera and a normal frame camera is the sampling method. A normal camera reads the complete image at fixed times, while each pixel in an event camera works independently and outputs an event only when it detects a large enough brightness change. Therefore, the raw output of an event camera is not a sequence of images but a stream of events generated over time\cite{gallego2022}.
+
+An event is usually written as
+\begin{equation}
+e_k=(x_k,y_k,t_k,p_k),
+\end{equation}
+where the subscript $k$ is the index of the event in the event stream. $x_k$ and $y_k$ are the pixel coordinates where the event is generated, $t_k$ is the timestamp of the event, and $p_k$ is the polarity. The polarity is usually represented by $+1$ and $-1$ for an increase or decrease in brightness. In other words, a single event only tells us which pixel changed, when it changed, and in which direction the brightness changed clearly. It does not directly give the absolute brightness value of the pixel.
+
+To describe how events are generated, logarithmic intensity is commonly used:
+\begin{equation}
+L(\mathbf{x},t)=\log I(\mathbf{x},t),
+\end{equation}
+where $I(\mathbf{x},t)$ is the light intensity at pixel position $\mathbf{x}=(x,y)$ and time $t$, and $L$ is the corresponding logarithmic intensity. Using the logarithm makes it possible to describe relative changes at different absolute brightness levels on the same scale. For example, an increase from 1 to 2 and an increase from 100 to 200 have absolute changes of 1 and 100, but both are actually a doubling of brightness. After conversion to the logarithmic domain, both changes correspond to an increase of $\log 2$. Therefore, logarithmic intensity is more suitable for describing the event trigger condition with an approximately fixed contrast threshold. A simplified event generation model can be written as
+\begin{equation}
+L(\mathbf{x},t_k)-L(\mathbf{x},t_k-\Delta t_k)=p_k C.
+\end{equation}
+Here, $t_k$ is the time of the $k$-th event, $\Delta t_k$ is the time interval from the previous reference time of this pixel to the current event, and $C>0$ is the contrast threshold. A positive-polarity event is generated when the logarithmic intensity increases by $C$ compared with the previous reference value, and a negative-polarity event is generated when it decreases by $C$. After the threshold is reached, the pixel updates its reference value and waits for the next large enough brightness change. This model explains why static regions with unchanged brightness usually generate few events, while moving edges, flickering light sources, or fast brightness changes can generate dense events\cite{gallego2022}.
+
+Figure~\ref{fig:event_generation_principle} summarizes the event-generation condition of one pixel with a simple flow.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        >=Latex,
+        node distance=1.2cm and 1.4cm,
+        box/.style={
+            draw,
+            rounded corners,
+            align=center,
+            minimum width=2.7cm,
+            minimum height=0.9cm,
+            font=\small
+        },
+        eventbox/.style={
+            draw,
+            rounded corners,
+            align=center,
+            minimum width=2.4cm,
+            minimum height=0.9cm,
+            font=\small
+        }
+    ]
+        \node[box] (intensity) {Pixel intensity\\$I(x,y,t)$};
+        \node[box, right=of intensity] (logintensity) {Log intensity\\$L=\log I$};
+        \node[box, right=of logintensity] (change) {Change in log intensity\\$\Delta L$};
+        \node[box, below=of change] (threshold) {Compare with\\threshold $\pm C$};
+
+        \node[eventbox, below left=1.1cm and 0.8cm of threshold] (on) {ON event\\$p=+1$};
+        \node[eventbox, below right=1.1cm and 0.8cm of threshold] (off) {OFF event\\$p=-1$};
+
+        \draw[->] (intensity) -- (logintensity);
+        \draw[->] (logintensity) -- (change);
+        \draw[->] (change) -- (threshold);
+        \draw[->] (threshold) -- node[left, font=\small] {$\Delta L \ge C$} (on);
+        \draw[->] (threshold) -- node[right, font=\small] {$\Delta L \le -C$} (off);
+    \end{tikzpicture}
+    \caption{Principle of event generation at a single event-camera pixel.}
+    \label{fig:event_generation_principle}
+\end{figure}
+
+However, event cameras also have clear limitations. Static scenes provide almost no new visual information. Sensor noise and light-source flicker can also generate events. When the scene changes strongly, the number of events can increase suddenly. More importantly, an event stream is not a regular image, so many traditional image algorithms cannot be used directly.
+
+To allow deep-learning models to process events, a group of asynchronous events usually needs to be organized into a regular data representation first. Common methods include\cite{gallego2022,scaramuzzaEventCameraTutorial}:
+
+\begin{itemize}
+\item Event Frame: events in a time window are accumulated into a two-dimensional image. This representation is easy to understand, but it loses some of the fine temporal information inside the window;
+\item Event Histogram: the number of events is counted at different pixel positions. Positive and negative polarities are usually accumulated separately, so polarity information can be preserved;
+\item Voxel Grid or Event Tensor: the time window is further divided into several time bins, and events are assigned to different temporal layers so that more temporal structure is preserved;
+\item Stacked Histogram: the time window is first divided into several time bins. In each bin, events are counted according to pixel position and polarity, and the histograms are stacked into a regular tensor. It can be understood as an Event Histogram with temporal binning;
+\item Rendered Event Image: this is mainly used for human observation. A part of the event stream is rendered into a normal image, but it is not necessarily the same as the input tensor used by a neural network.
+\end{itemize}
+
+Event windows can be divided by a fixed time length or by a fixed number of events. The offline RVT validation in this project uses a stacked histogram with a fixed time window. Each input representation covers about 50 ms of event data and is further divided into 10 time bins. In each bin, events at different spatial positions and with different polarities are counted separately, and the results are stacked into a fixed-size tensor as the RVT input. The implementation is described in Section~\ref{sec:rvt_offline}.
+
+\section{Event-Based Object Detection and RVT}
+
+Event-based object detection still needs to output classes, confidence scores, and bounding boxes, but the input is no longer a normal RGB image. Instead, it is event data from a certain time range. Because a single event only contains a local brightness change, a detection model usually needs to combine many events and use both spatial position and temporal changes to recognize complete objects.
+
+This project uses the Prophesee GEN1 Automotive Detection Dataset for offline validation. The dataset was recorded with a Prophesee GEN1 event sensor with a resolution of $304\times240$. It contains driving scenes from cities, highways, suburbs, and rural roads, and provides bounding-box annotations for car and pedestrian classes\cite{propheseeAutomotiveToolbox,gehrig2023}. Its role is similar to an image dataset in normal object detection: the event stream provides the model input, while the manually labeled bounding boxes provide the reference answers for training or evaluation.
+
+Recurrent Vision Transformer (RVT) is a model for event-based object detection\cite{gehrig2023}. It does not send every single event into the network. Instead, it first converts a group of events into a regular event representation and then uses a vision network to extract features. The recurrent structure in RVT keeps information from the previous time period so that later time periods can continue to use these historical features. The Transformer/attention part is used to model relationships between spatial regions. The reason for this design is that event-based objects usually appear continuously over a period of time. A very short event window may not contain the complete object shape, while information from previous and later time periods can help detection.
+
+%The RVT processing can be divided into event representation, temporal feature extraction, and object-detection output. The Detection Head has a role similar to a normal object detector and finally outputs object positions and classes. This project uses the RVT-Tiny GEN1 pretrained checkpoint for validation on the Jetson and saves predictions and ground truth as images for inspection. The original RVT paper reports about 47.2\% mAP on GEN1\cite{gehrig2023}. In the following sections, this value is only used as a reference for checking whether the result is in a reasonable range. Results from different hardware and software environments are not treated as a strict direct comparison.
+
+\section{ROS 2 and Cross-Device Event Transfer}
+
+Robot Operating System 2 (ROS 2) provides a way to connect different software modules. In ROS 2, a running functional module is called a node. A node that sends data can create a publisher, while a node that receives data can create a subscriber. Both sides exchange messages with a fixed message type through a named topic\cite{ros2CppPubSubFoxy}. In this way, camera acquisition, network transfer, decoding, rendering, and display can be handled by different programs instead of putting all functions into one program.
+
+In this project, \texttt{metavision\_driver} on the Kria publishes the event topic\cite{metavisionDriver}. The full ROS 2 message type used by this topic is \texttt{event\_camera\_msgs/msg/EventPacket}. It mainly contains \texttt{header}, \texttt{seq}, \texttt{time\_base}, \texttt{encoding}, and the raw \texttt{events} byte stream. For the current EVT3 path, the time encoding of each event is still stored in the raw \texttt{events} data. The driver currently sets \texttt{time\_base} to 0 and uses \texttt{header.stamp} to provide message-level time. Therefore, the time information of individual events must be recovered by parsing the raw event stream with the EVT3 decoder and cannot be obtained only from the ROS 2 message header. After the Jetson subscribes to these messages, it can decode the EVT3 data and then render the events into normal images.
+
+\section{Embedded Computing Platforms}
+
+This project mainly uses the NVIDIA Jetson Orin and the AMD/Xilinx Kria KV260. Both are embedded computing platforms, but they are suitable for different tasks and therefore have different roles in the system.
+
+The Jetson Orin integrates an ARM CPU, an NVIDIA GPU, and unified memory, and provides deep-learning software environments such as CUDA and TensorRT. It is suitable for object detection and other GPU inference programs. In this project, the Jetson is used for frame-based object detection, offline RVT validation, and EVT3 decoding, event rendering, and image display in the final real-time pipeline.
+
+The Kria KV260 is based on the K26 SOM. It contains both an ARM Processing System (PS) that runs Linux and Field-Programmable Gate Array (FPGA) Programmable Logic (PL), which can implement custom digital logic. In this work, IMX636 events first pass through MIPI and the existing FPGA/V4L2 data path into Linux. The ARM/Linux side then reads and publishes the events through the Metavision/OpenEB HAL and the ROS 2 driver.
