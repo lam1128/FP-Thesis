@@ -1,6 +1,6 @@
 \chapter{Technical Background}
 
-This chapter introduces the technical background needed to understand the later system implementation. It starts with traditional frame-based object detection and tracking, then explains the working principle of event cameras, event data representations, and the RVT event-based object detection method. Finally, it introduces the two embedded computing platforms used in this project: Jetson Orin and Kria KV260.
+This chapter introduces the technical background needed to understand the later system implementation. It starts with traditional frame-based object detection and tracking, then explains the working principle of event cameras, event data representations, and the RVT event-based object detection method. Finally, it introduces the two embedded computing platforms used in this project: Jetson AGX Orin and Kria KV260.
 
 \section{Object Detection, Tracking, and Evaluation in Frame-Based Vision}
 
@@ -120,8 +120,8 @@ In this project, \texttt{metavision\_driver} on the Kria publishes the event top
 
 \section{Embedded Computing Platforms}
 
-This project mainly uses the NVIDIA Jetson Orin and the AMD/Xilinx Kria KV260. Both are embedded computing platforms, but they are suitable for different tasks and therefore have different roles in the system.
+This project mainly uses the NVIDIA Jetson AGX Orin and the AMD/Xilinx Kria KV260. Both are embedded computing platforms, but they are suitable for different tasks and therefore have different roles in the system.
 
-The Jetson Orin integrates an ARM CPU, an NVIDIA GPU, and unified memory, and provides deep-learning software environments such as CUDA and TensorRT. It is suitable for object detection and other GPU inference programs. In this project, the Jetson is used for frame-based object detection, offline RVT validation, and EVT3 decoding, event rendering, and image display in the final real-time pipeline.
+The Jetson AGX Orin integrates an ARM CPU, an NVIDIA GPU, and unified memory, and provides deep-learning software environments such as CUDA and TensorRT. It is suitable for object detection and other GPU inference programs. In this project, the Jetson is used for frame-based object detection, offline RVT validation, and EVT3 decoding, event rendering, and image display in the final real-time pipeline.
 
 The Kria KV260 is based on the K26 SOM. It contains both an ARM Processing System (PS) that runs Linux and Field-Programmable Gate Array (FPGA) Programmable Logic (PL), which can implement custom digital logic. In this work, IMX636 events first pass through MIPI and the existing FPGA/V4L2 data path into Linux. The ARM/Linux side then reads and publishes the events through the Metavision/OpenEB HAL and the ROS 2 driver.
