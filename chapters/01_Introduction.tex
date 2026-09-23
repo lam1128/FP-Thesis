@@ -12,14 +12,12 @@ The HybridNeuroPerception project studies the combined use of traditional vision
 
 \section{Objectives and Scope of the Research Internship}
 
-According to the task description for this internship~\parencite{fpMainTasks}, the work can be divided into the following parts:
+According to the task description for this internship~\parencite{fpMainTasks}, the work can be divided into the following parts. The final results include a frame-based vision baseline on the Jetson, offline GEN1 validation of RVT, and a real-time event transfer and visualization pipeline from the IMX636 and Kria to the Jetson:
 
 \begin{enumerate}[label=\arabic*.]
     \item Build a frame-camera object detection system on the Jetson Orin, and implement a simple object tracking program based on bounding-box overlap together with a basic KITTI evaluation process;
-    \item Deploy the Recurrent Vision Transformer (RVT) on the Jetson and use the GEN1 dataset for offline event-based object detection validation;
+    \item Deploy the Recurrent Vision Transformers (RVT) model on the Jetson and use the GEN1 dataset for offline event-based object detection validation;
     \item Set up the Kria KV260 and IMX636 event-camera platform and confirm that real event data can be acquired and displayed;
     \item Use the Metavision ROS 2 driver on the Kria to publish raw event messages. The final test configuration in this work uses EVT3 and sends the event data to the Jetson over Ethernet;
     \item Complete EVT3 decoding, event-image rendering, and display on the Jetson, and check whether the event topic and rendered images can be output continuously.
 \end{enumerate}
-
-The final results include a frame-based vision baseline on the Jetson, offline GEN1 validation of RVT, and a real-time event transfer and visualization pipeline from the IMX636 and Kria to the Jetson.

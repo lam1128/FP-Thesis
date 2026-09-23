@@ -96,7 +96,7 @@ For the 1 GbE real-time link, the current default configuration also includes so
 
 After the previous stages were completed, this project combined the real event camera, Kria front end, ROS 2 network communication, EVT3 decoding and rendering in Jetson Docker, and image display on the host into one continuous real-time processing pipeline. The final system uses a distributed structure. The Kria acquires event-camera data and publishes EVT3 \texttt{EventPacket} messages. Jetson Docker performs event decoding and image rendering. The Jetson host uses \texttt{rqt\_image\_view} to display the images produced by the renderer. This task division separates the sensor front end, network communication, event processing, and graphical display, so each module can be checked separately.
 
-The overall experimental hardware setup is shown in Figure~\ref{fig:hardware_setup}.
+The overall experimental hardware setup is shown in Figure~\ref{fig:hardware_setup}. The data flow of the final system is shown in Figure~\ref{fig:final_realtime_pipeline}.
 
 \begin{figure}[htbp]
     \centering
@@ -108,8 +108,6 @@ The overall experimental hardware setup is shown in Figure~\ref{fig:hardware_set
     \caption{Experimental hardware setup with Jetson Orin, Kria KV260, and the IMX636 event camera.}
     \label{fig:hardware_setup}
 \end{figure}
-
-The data flow of the final system is shown in Figure~\ref{fig:final_realtime_pipeline}.
 
 \begin{figure}[htbp]
     \centering
