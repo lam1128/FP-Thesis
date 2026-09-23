@@ -162,7 +162,7 @@ The data flow of the final system is shown in Figure~\ref{fig:final_realtime_pip
     \draw[->]
         (kria.east) --
         node[midway, above, yshift=-1mm, font=\scriptsize]
-        {\texttt{/metavision\_driver/events}}
+        {\path{/metavision_driver/events}}
         (network.west);
 
     % Ethernet / ROS 2 -> Jetson Docker
@@ -184,7 +184,7 @@ The data flow of the final system is shown in Figure~\ref{fig:final_realtime_pip
 
 ROS 2 provides cross-device modular communication in this system. The \texttt{metavision\_driver} on the Kria acts as a publisher and publishes the event topic. The event-processing components in Jetson Docker subscribe to this topic, and the messages are transferred between the two devices over Ethernet. The important point for the system is that the camera driver and Jetson processing modules are separated through a standard ROS 2 topic. This allows the publisher, network transfer, and subscriber/renderer status to be checked separately.
 
-The Metavision ROS 2 driver on the Kria obtains events from the IMX636 data path and publishes them as \texttt{EventPacket} messages with the EVT3 encoding used in the current test~\parencite{metavisionDriver}. The final event topic is \texttt{/metavision\_driver/events}, and the message type is \texttt{event\_camera\_msgs/msg/EventPacket}. The publisher uses \texttt{best\_effort}, \texttt{volatile}, and KeepLast QoS settings, which are more suitable for continuous high-throughput sensor data.
+The Metavision ROS 2 driver on the Kria obtains events from the IMX636 data path and publishes them as \texttt{EventPacket} messages with the EVT3 encoding used in the current test~\parencite{metavisionDriver}. The final event topic is \path{/metavision_driver/events}, and the message type is \texttt{event\_camera\_msgs/msg/EventPacket}. The publisher uses \texttt{best\_effort}, \texttt{volatile}, and KeepLast QoS settings, which are more suitable for continuous high-throughput sensor data.
 
 The Kria and Jetson exchange ROS 2 \texttt{EventPacket} messages over Ethernet. As long as both devices are in a network environment where they can communicate and use consistent ROS 2 settings, the subscriber in Jetson Docker can receive the EVT3 event packets published by the Kria. By keeping the network communication layer as a standard ROS 2 topic, the renderer, recording node, or future event-based object detection module on the Jetson can be replaced later without changing the camera driver on the Kria.
 
